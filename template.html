@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>摆书前压一压 · 这块层板放满书会不会弯</title>
+<meta name="description" content="把层板的跨度、进深、板厚、材料和打算放多重填进来，算出放满后长期会弯多少毫米、看不看得出来；不过关的给出加几根支撑、换多厚、贴多高的木条、每米最多放多重四条改法。">
+<style>
+  :root{
+    --bg:#eef0ec; --card:#fff; --ink:#1f2420; --ink2:#4f5850; --mut:#848b84; --line:#dde2dc;
+    --ok:#2f6b3f; --ok2:#e3f0e5; --no:#a33a26; --no2:#f8e3dd; --wood:#c8a06a; --wood2:#f3e6d2; --act:#2e5570; --act2:#e2ecf3;
+    --sh:0 1px 2px rgba(31,36,32,.06),0 6px 18px rgba(31,36,32,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:22px 16px 72px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 6px}
+  .sub{color:var(--ink2);margin:0;font-size:15.5px}
+  .muted{color:var(--mut);font-size:13.5px}
+  .hide{display:none !important}
+  button{font:inherit;cursor:pointer}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13.5px;color:var(--ink2)}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:16px;margin:14px 0;min-width:0}
+  .card h2{font-size:17px;margin:0 0 10px}
+  .f{min-width:0}
+  .f label{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .f input,.f select{width:100%;font:15px/1.4 ui-monospace,Menlo,monospace;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:0}
+  .f select,.f.name input{font-family:inherit;font-size:14.5px}
+  .f.bad input,.f.bad select{border-color:var(--no);background:#fff4f1}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(122px,100%),1fr));gap:9px}
+  .btn{background:var(--ink);border:1px solid var(--ink);color:#fff;border-radius:9px;padding:7px 12px;font-size:14px}
+  .btn.ghost{background:#fff;color:var(--ink)}
+  .btn.mini{padding:5px 10px;font-size:13px}
+  .btn.del{background:#fff;color:var(--no);border-color:#e9c2bb}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+  .box{border-radius:10px;padding:10px 12px;font-size:14.5px;margin:10px 0;overflow-wrap:anywhere}
+  .box.bad{background:var(--no2);color:#6b2416;border:1px solid #f0c7bd}
+  .box.warn{background:#fbf3df;color:#5f4a10;border:1px solid #eadcae}
+  .box ul{margin:4px 0 0;padding-left:20px}
+
+  /* 检查单：每块板一行，先打勾打叉 */
+  .head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .score{font-size:22px;font-weight:700}
+  #saveTag{font-size:12.5px;color:var(--mut);font-weight:400}
+  .check{list-style:none;margin:8px 0 0;padding:0}
+  .check li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line)}
+  .check li:last-child{border-bottom:0}
+  .mk{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px}
+  .mk.ok{background:var(--ok2);color:var(--ok)}
+  .mk.no{background:var(--no2);color:var(--no)}
+  .check .nm{min-width:0;overflow-wrap:anywhere}
+  .check .nm small{display:block;color:var(--mut);font-size:12.5px}
+  .check .v{font:700 16px ui-monospace,Menlo,monospace;white-space:nowrap;text-align:right}
+  .check .v small{display:block;font-weight:400;font-size:12px;color:var(--mut)}
+  @media (max-width:520px){
+    .check li{grid-template-columns:34px minmax(0,1fr)}
+    .check .v{grid-column:2;text-align:left}
+    .check .v small{display:inline;margin-left:8px}
+  }
+  .acts{display:grid;gap:8px;margin-top:6px}
+  .act{text-align:left;background:var(--act2);border:1px solid #bcd0de;color:#1e3d52;border-radius:10px;padding:9px 12px;font-size:14px;overflow-wrap:anywhere}
+
+  /* 每块板：侧视图 + 读数 + 输入 */
+  .shelf{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
+  @media (max-width:720px){ .shelf{grid-template-columns:minmax(0,1fr)} }
+  .shelf h3{margin:0 0 6px;font-size:18px;overflow-wrap:anywhere}
+  .side{display:block;width:100%;height:auto;background:#f7f8f5;border-radius:10px}
+  .big{font-size:23px;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+  .big.ok{color:var(--ok)} .big.no{color:var(--no)}
+  .read{margin:4px 0 8px;font-size:14.5px;color:var(--ink2);overflow-wrap:anywhere}
+  .read b{color:var(--ink)}
+  .calc{font:13px/1.55 ui-monospace,Menlo,monospace;color:var(--ink2);background:#f6f7f4;border-radius:8px;padding:8px 10px;overflow-wrap:anywhere;margin:6px 0}
+  .tog{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink2);grid-column:1/-1}
+  .foot{margin-top:18px;font-size:13.5px;color:var(--mut)}
+  .foot li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>摆书前压一压</h1>
+    <p class="sub">层板放满书，过半年中间塌下去一条弧，这事可以先算。填跨度、进深、板厚、材料和打算放多重，看长期会弯几毫米、看不看得出来；不过关的给出加支撑、换厚板、贴木条、少放书四条改法，点一下就改进去重算。</p>
+    <div class="chips" id="presets"></div>
+    <p class="muted" id="presetNote"></p>
+  </header>
+
+  <div id="errBox" class="box bad hide"></div>
+
+  <section class="card" id="checkCard">
+    <div class="head"><h2 style="margin:0">检查单 <span id="saveTag"></span></h2><div class="score" id="score"></div></div>
+    <p class="muted" id="checkMeta" style="margin:2px 0 0"></p>
+    <ul class="check" id="check"></ul>
+    <div id="actsBlock"><h2 style="margin:14px 0 0;font-size:15px">没过的板可以这样改（点一下就写进下面那块板）</h2><div class="acts" id="acts"></div></div>
+    <div id="warnBox" class="box warn hide"></div>
+  </section>
+
+  <div id="shelves"></div>
+  <div class="bar"><button type="button" class="btn ghost" id="addShelf">＋ 加一块层板</button><span class="muted" id="shelfCount"></span></div>
+
+  <section class="card">
+    <h2>全部层板共用的两个数 <span class="muted" style="font-weight:400">（都是可改的设计值）</span></h2>
+    <div class="grid">
+      <div class="f" id="f_creep"><label for="creep">蠕变系数（放久了再多弯几成）</label><input id="creep" inputmode="decimal"></div>
+      <div class="f" id="f_lim"><label for="lim">看得出来的下垂 mm/m</label><input id="lim" inputmode="decimal"></div>
+    </div>
+    <p class="muted">木头和板材压久了会慢慢多弯一点（蠕变），本页用「长期 = 刚放上去 ×（1 + 蠕变系数）」，默认 0.5，即多弯五成。「看得出来」按每米跨度下垂多少毫米算，默认 2.5 mm/m，即 80 cm 的板中间塌 2 mm；对着灯看平直的书脊线会更早发现，你可以收紧。</p>
+  </section>
+
+  <section class="card">
+    <div class="bar" style="margin:0">
+      <button type="button" class="btn mini" id="dlCsv">下载 CSV</button>
+      <button type="button" class="btn mini" id="dlMd">下载 MD</button>
+      <button type="button" class="btn mini" id="dlPng">下载检查卡 PNG</button>
+      <button type="button" class="btn mini ghost" id="dlJson">备份 JSON</button>
+      <button type="button" class="btn mini ghost" id="impJson">从 JSON 恢复</button>
+      <button type="button" class="btn mini ghost" id="reset">恢复默认</button>
+      <input type="file" id="impFile" accept="application/json,.json" class="hide">
+    </div>
+    <p class="muted" style="margin:8px 0 0">输入会自动存到这台设备的浏览器里，刷新还在；换设备用 JSON 备份。</p>
+  </section>
+
+  <ul class="foot">
+    <li>算法是均布荷载的梁：搁在层板钉上 δ = 5wL⁴ ÷ (384EI)，两端钉死 δ = wL⁴ ÷ (384EI)；w 是书加板自重的每毫米重量，I 按板（和前封边木条）的截面算。中间支撑把板分成等长的几段，每段按「搁着」单独算，偏保守。</li>
+    <li>材料的弹性模量取公开资料里常见值的下限（刨花板 2.8、中纤板 3.6、欧松板 4.4、多层板 7、松木 8.5、橡木 10.3 GPa），同一种板不同厂家差别很大；有厂家数据就改成厂家的。</li>
+    <li>只算会弯多少，不算会不会断、层板钉和螺丝撑不撑得住、柜体会不会倒；默认场景是虚构的，结果是估算，不是实测。</li>
+  </ul>
+</div>
+<script src="./core.js"></script>
+<script src="./ui.js"></script>
+</body>
+</html>
